@@ -74,6 +74,35 @@ let
     snabbBenchTestNFVPacketblaster
   ];
 
+  # Functions providing commands to convert logs to CSV
+  toCSV = {
+    basic = name: drv: ''
+      awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt >> $out/${name}.csv
+    '';
+    blast = name: drv: ''
+      pps = $(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g
+      echo "scale=2; $pps / 1000000" | bc >> $out/${name}.csv'
+    '';
+    iperf = name: drv: ''
+      awk '/^IPERF-1500/ { print $2 } >> $out/${name}.csv
+    '';
+    dpdk = name: drv: ''
+      awk '/^Rate(Mpps):/ { print $2 } >> $out/${name}.csv
+    '';
+  };
+
+  benchmark-csv = runCommand "snabb-performance-csv"
+    { buildInputs = [ pkgs.gawk pkgs.bc ];
+      preferLocalBuild = true; }
+  ''
+    ${concatMapStringsSep "\n" (toCSV.basic "basic1")    snabbBenchTestBasic}
+    ${concatMapStringsSep "\n" (toCSV.blast "pb64")      snabbBenchTestPacketblaster64}
+    ${concatMapStringsSep "\n" (toCSV.blast "pbS64")     snabbBenchTestPacketblasterSynth64}
+    ${concatMapStringsSep "\n" (toCSV.iperf "iperf1500") snabbBenchTestNFV}
+    ${concatMapStringsSep "\n" (toCSV.iperf "iperf9000") snabbBenchTestNFVJumbo}
+    ${concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64")    snabbBenchTestNFVPacketblaster}
+  '';
+
   benchmark-report = runCommand "snabb-performance-final-report" { preferLocalBuild = true; } ''
     mkdir -p $out/nix-support
 
@@ -89,5 +118,6 @@ let
     echo "file tarball $out/logs.tar.xz" >> $out/nix-support/hydra-build-products
   '';
 in {
+ inherit benchmark-csv;
  inherit benchmark-report;
 } // (builtins.listToAttrs (map (attrs: nameValuePair attrs.name attrs) benchmarks))
