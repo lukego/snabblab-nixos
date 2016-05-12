@@ -75,29 +75,32 @@ let
   ];
 
   # Functions providing commands to convert logs to CSV
+  writeCSV = benchName: ''if test -z "$score"; then score="NA"; fi
+                          echo ${benchName},$score >> $out/csv'';
   toCSV = {
-    basic = name: drv: ''
-      awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt >> $out/${name}.csv
-    '';
-    blast = name: drv: ''
-      pps = $(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g
-      echo "scale=2; $pps / 1000000" | bc >> $out/${name}.csv'
-    '';
-    iperf = name: drv: ''
-      awk '/^IPERF-1500/ { print $2 } >> $out/${name}.csv
-    '';
-    dpdk = name: drv: ''
-      awk '/^Rate(Mpps):/ { print $2 } >> $out/${name}.csv
-    '';
+    basic = benchName: drv: ''
+      score=$(awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt)
+    '' + writeCSV benchName;
+    blast = benchName: drv: ''
+      pps=$(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g)
+      score=$(echo "scale=2; $pps / 1000000" | bc)
+    '' + writeCSV benchName;
+    iperf = benchName: drv: ''
+      score=$(awk '/^IPERF-1500/ { print $2 }')
+    '' + writeCSV benchName;
+    dpdk = benchName: drv: ''
+      score=$(awk '/^Rate(Mpps):/ { print $2 }')
+    '' + writeCSV benchName;
   };
 
   benchmark-csv = runCommand "snabb-performance-csv"
     { buildInputs = [ pkgs.gawk pkgs.bc ];
       preferLocalBuild = true; }
   ''
+    mkdir $out
     ${concatMapStringsSep "\n" (toCSV.basic "basic1")    snabbBenchTestBasic}
-    ${concatMapStringsSep "\n" (toCSV.blast "pb64")      snabbBenchTestPacketblaster64}
-    ${concatMapStringsSep "\n" (toCSV.blast "pbS64")     snabbBenchTestPacketblasterSynth64}
+    ${concatMapStringsSep "\n" (toCSV.blast "blast64")   snabbBenchTestPacketblaster64}
+    ${concatMapStringsSep "\n" (toCSV.blast "blastS64")  snabbBenchTestPacketblasterSynth64}
     ${concatMapStringsSep "\n" (toCSV.iperf "iperf1500") snabbBenchTestNFV}
     ${concatMapStringsSep "\n" (toCSV.iperf "iperf9000") snabbBenchTestNFVJumbo}
     ${concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64")    snabbBenchTestNFVPacketblaster}
