@@ -76,7 +76,7 @@ let
 
   # Functions providing commands to convert logs to CSV
   writeCSV = benchName: ''if test -z "$score"; then score="NA"; fi
-                          echo ${benchName},$score >> $out/csv'';
+                          echo ${benchName},$score >> $out/bench.csv'';
   toCSV = {
     basic = benchName: drv: ''
       score=$(awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt)
@@ -86,10 +86,11 @@ let
       score=$(echo "scale=2; $pps / 1000000" | bc)
     '' + writeCSV benchName;
     iperf = benchName: drv: ''
-      score=$(awk '/^IPERF-1500/ { print $2 }')
+      cat ${drv}/log.txt
+      score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
     '' + writeCSV benchName;
     dpdk = benchName: drv: ''
-      score=$(awk '/^Rate(Mpps):/ { print $2 }')
+      score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
     '' + writeCSV benchName;
   };
 
@@ -98,6 +99,7 @@ let
       preferLocalBuild = true; }
   ''
     mkdir $out
+    echo "benchmark,score" > $out/bench.csv
     ${concatMapStringsSep "\n" (toCSV.basic "basic1")    snabbBenchTestBasic}
     ${concatMapStringsSep "\n" (toCSV.blast "blast64")   snabbBenchTestPacketblaster64}
     ${concatMapStringsSep "\n" (toCSV.blast "blastS64")  snabbBenchTestPacketblasterSynth64}
@@ -106,20 +108,33 @@ let
     ${concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64")    snabbBenchTestNFVPacketblaster}
   '';
 
-  benchmark-report = runCommand "snabb-performance-final-report" { preferLocalBuild = true; } ''
+  benchmark-report = runCommand "snabb-performance-report"
+    { preferLocalBuild = true;
+      buildInputs = [ benchmark-csv rPackages.rmarkdown rPackages.ggplot2 R pandoc which ]; }
+  ''
     mkdir -p $out/nix-support
 
     ${concatMapStringsSep "\n" (drv: "cat ${drv}/log.txt > $out/${drv.benchName}-${toString drv.numRepeat}.log") benchmarks}
 
     tar cfJ logs.tar.xz -C $out .
 
-    for f in $out/*; do
+    for f in $out/*.log; do
       echo "file log $f" >> $out/nix-support/hydra-build-products
     done
 
     mv logs.tar.xz $out/
     echo "file tarball $out/logs.tar.xz" >> $out/nix-support/hydra-build-products
+
+    # Create markdown report
+    cp ${./report.Rmd} ./report.Rmd
+    cp ${benchmark-csv}/bench.csv .
+    cat bench.csv
+    cat report.Rmd
+    echo "library(rmarkdown); render('report.Rmd')" | R --no-save
+    cp report.html $out
+    echo "file HTML $out/report.html"  >> $out/nix-support/hydra-build-products
   '';
+
 in {
  inherit benchmark-csv;
  inherit benchmark-report;

@@ -1,0 +1,7 @@
+Hello, world!
+
+```{r}
+d <- read.csv("bench.csv", head = TRUE)
+df <- as.data.frame(d)
+by(df, df$benchmark, summary)
+```
