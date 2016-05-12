@@ -119,10 +119,6 @@ let
 
     tar cfJ logs.tar.xz -C $out .
 
-    for f in $out/*.log; do
-      echo "file log $f" >> $out/nix-support/hydra-build-products
-    done
-
     mv logs.tar.xz $out/
     echo "file tarball $out/logs.tar.xz" >> $out/nix-support/hydra-build-products
 
