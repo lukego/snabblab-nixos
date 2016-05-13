@@ -17,12 +17,20 @@ let
   defaults = {
     inherit requiredSystemFeatures SNABB_PCI0 SNABB_PCI_INTEL0 SNABB_PCI_INTEL1 snabb;
     times = numTimesRunBenchmark;
+    configurePhase = ''
+      export SNABB_SHM_ROOT=$out/state
+    '';
     installPhase = ''
-      if test -d state; then
-        /var/setuid-wrappers/sudo chown -R $(whoami) state
-        tar cfJ $out/state.tar.xz state
-        test -d $out/nix-support || mkdir -p $out/nix-support
+      if test -d $out/state; then
+        /var/setuid-wrappers/sudo chown -R $(whoami) $out/state
+        tar cfJ $out/state.tar.xz $out/state
+        rm -rf $out/state
+        mkdir -p $out/nix-support
         echo "file tarball $out/state.tar.xz" >> $out/nix-support/hydra-build-products
+      fi
+      if test -f $out/log.txt; then
+        mkdir -p $out/nix-support
+        echo "doc none $out/log.txt" >> $out/nix-support/hydra-build-products
       fi
     '';
     alwaysSucceed = true;
@@ -30,7 +38,6 @@ let
   snabbBenchTestBasic = mkSnabbBenchTest (defaults // {
     name = "${snabb.name}-basic1-100e6";
     checkPhase = ''
-      export SNABB_SHM_ROOT=state
       /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/log.txt
     '';
   });
@@ -38,7 +45,6 @@ let
     name = "${snabb.name}-packetblaster-64";
     checkPhase = ''
       cd src
-      export SNABB_SHM_ROOT=state
       /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb packetblaster replay --duration 1 \
         program/snabbnfv/test_fixtures/pcap/64.pcap "${SNABB_PCI_INTEL0}" |& tee $out/log.txt
     '';
@@ -46,7 +52,7 @@ let
   snabbBenchTestPacketblasterSynth64 = mkSnabbBenchTest (defaults // {
     name = "${snabb.name}-packetblaster-synth-64";
     checkPhase = ''
-      /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster synth \
+      /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb packetblaster synth \
         --src 11:11:11:11:11:11 --dst 22:22:22:22:22:22 --sizes 64 \
         --duration 1 "${SNABB_PCI_INTEL0}" |& tee $out/log.txt
     '';
@@ -56,7 +62,6 @@ let
     needsTestEnv = true;
     checkPhase = ''
       cd src
-      export SNABB_SHM_ROOT=state
       /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
     '';
   });
@@ -65,7 +70,6 @@ let
     needsTestEnv = true;
     checkPhase = ''
       cd src
-      export SNABB_SHM_ROOT=state
       /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench jumbo |& tee $out/log.txt
     '';
   });
