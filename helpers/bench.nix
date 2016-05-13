@@ -76,23 +76,25 @@ let
   ];
 
   # Functions providing commands to convert logs to CSV
-  writeCSV = benchName: ''if test -z "$score"; then score="NA"; fi
-                          echo ${benchName},$score >> $out/bench.csv'';
+  # Fields: benchmark,id,score,unit
+  writeCSV = drv: benchName: unit:
+               ''if test -z "$score"; then score="NA"; fi
+                 echo ${benchName},${toString drv.numRepeat},$score,${unit} >> $out/bench.csv'';
   toCSV = {
     basic = benchName: drv: ''
       score=$(awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt)
-    '' + writeCSV benchName;
+    '' + writeCSV drv benchName "Mpps";
     blast = benchName: drv: ''
       pps=$(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g)
       score=$(echo "scale=2; $pps / 1000000" | bc)
-    '' + writeCSV benchName;
+    '' + writeCSV drv benchName "Mpps";
     iperf = benchName: drv: ''
       cat ${drv}/log.txt
       score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
-    '' + writeCSV benchName;
+    '' + writeCSV drv benchName "Gbps";
     dpdk = benchName: drv: ''
       score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
-    '' + writeCSV benchName;
+    '' + writeCSV drv benchName "Mpps";
   };
 
   benchmark-csv = runCommand "snabb-performance-csv"
@@ -100,7 +102,7 @@ let
       preferLocalBuild = true; }
   ''
     mkdir $out
-    echo "benchmark,score" > $out/bench.csv
+    echo "benchmark,id,score,unit" > $out/bench.csv
     ${concatMapStringsSep "\n" (toCSV.basic "basic1")    snabbBenchTestBasic}
     ${concatMapStringsSep "\n" (toCSV.blast "blast64")   snabbBenchTestPacketblaster64}
     ${concatMapStringsSep "\n" (toCSV.blast "blastS64")  snabbBenchTestPacketblasterSynth64}

@@ -1,7 +1,57 @@
+---
+title: "Snabb performance report"
+output:
+  html_document:
+    toc: true
+    theme: united
+    fig_width: 10
+    fig_height: 6
+---
+
+# Start
+
 Hello, world!
 
+## Init
+
 ```{r}
+library("ggplot2")
 d <- read.csv("bench.csv", head = TRUE)
 df <- as.data.frame(d)
-by(df, df$benchmark, summary)
 ```
+
+```{r}
+summary(df)
+```
+
+## Scatter plots
+
+[Scatter plot](https://en.wikipedia.org/wiki/Scatter_plot) shows the data very directly.
+
+- Y-axis is the benchmark score. The units are either Mpps (Million packets per second) or Gbps (Gigabits per second) depending on the benchmark.
+- The X-axis is the test run sequence number. You can use this number to identify the specific benchmark run, for example to download its logs from [Hydra](https://hydra.snabb.co/).
+- Jitter is used to slightly spread out data points on the X-axis. This is intended to improve readability by reducing overlap. Transparent is also used to help see overlapping points.
+
+```{r}
+p <- ggplot(df, aes(x=id, y=score, color=benchmark))
+p <- p + expand_limits(y=0) + expand_limits(y=20)
+p <- p + ggtitle("Benchmarks based on bit rate (Gbps)")
+p <- p + geom_point()
+p <- p + geom_jitter(size=3, width=0.25, alpha=0.5)
+p <- p + scale_y_continuous(breaks = seq(from=0, to=30, by=2))
+p
+```
+
+## ECDFs
+
+[ECDFs](https://en.wikipedia.org/wiki/Empirical_distribution_function) summarize data by showing what proportion of results were above and below a given score.
+
+```{r}
+p <- ggplot(df, aes(score, color=benchmark))
+p <- p + facet_wrap(~benchmark, scales="free")
+p <- p + ggtitle("Benchmarks based on bit rate (Gbps)")
+p <- p + stat_ecdf()
+p <- p + scale_y_continuous(labels = scales::percent)
+p
+```
+
