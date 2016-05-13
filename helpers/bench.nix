@@ -17,19 +17,27 @@ let
   defaults = {
     inherit requiredSystemFeatures SNABB_PCI0 SNABB_PCI_INTEL0 SNABB_PCI_INTEL1 snabb;
     times = numTimesRunBenchmark;
+    installPhase = ''
+      if test -d state; then
+        /var/setuid-wrappers/sudo chown -R $(whoami) state
+        tar cfJ $out/state.tar.xz state
+      fi
+    '';
     alwaysSucceed = true;
   };
   snabbBenchTestBasic = mkSnabbBenchTest (defaults // {
     name = "${snabb.name}-basic1-100e6";
     checkPhase = ''
-      /var/setuid-wrappers/sudo ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/log.txt
+      export SNABB_SHM_ROOT=state
+      /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/log.txt
     '';
   });
   snabbBenchTestPacketblaster64 = mkSnabbBenchTest (defaults // {
     name = "${snabb.name}-packetblaster-64";
     checkPhase = ''
       cd src
-      /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster replay --duration 1 \
+      export SNABB_SHM_ROOT=state
+      /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb packetblaster replay --duration 1 \
         program/snabbnfv/test_fixtures/pcap/64.pcap "${SNABB_PCI_INTEL0}" |& tee $out/log.txt
     '';
   });
@@ -46,6 +54,7 @@ let
     needsTestEnv = true;
     checkPhase = ''
       cd src
+      export SNABB_SHM_ROOT=state
       /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
     '';
   });
@@ -54,6 +63,7 @@ let
     needsTestEnv = true;
     checkPhase = ''
       cd src
+      export SNABB_SHM_ROOT=state
       /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench jumbo |& tee $out/log.txt
     '';
   });
