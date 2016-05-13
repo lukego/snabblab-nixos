@@ -8,11 +8,12 @@ output:
     fig_height: 6
 ---
 
-# Start
+# Introduction
 
-Hello, world!
+This is a very rough draft of an automatically-generated report
+showing performance benchmark scores for one version of Snabb.
 
-## Init
+## Initialization
 
 ```{r}
 library("ggplot2")
@@ -24,34 +25,73 @@ df <- as.data.frame(d)
 summary(df)
 ```
 
-## Scatter plots
+## Line graph
 
-[Scatter plot](https://en.wikipedia.org/wiki/Scatter_plot) shows the data very directly.
+[Line graph](https://en.wikipedia.org/wiki/Line_graph) shows the data very directly.
 
-- Y-axis is the benchmark score. The units are either Mpps (Million packets per second) or Gbps (Gigabits per second) depending on the benchmark.
-- The X-axis is the test run sequence number. You can use this number to identify the specific benchmark run, for example to download its logs from [Hydra](https://hydra.snabb.co/).
-- Jitter is used to slightly spread out data points on the X-axis. This is intended to improve readability by reducing overlap. Transparent is also used to help see overlapping points.
+Y-axis is the benchmark score. The units are either Mpps (Million
+packets per second) or Gbps (Gigabits per second) depending on the
+benchmark. These are plotted together for convenience because the
+scales are fairly similar.
+
+The X-axis is the test run sequence number. You can use this number to
+identify the specific benchmark run, for example to download its logs
+from [Hydra](https://hydra.snabb.co/).
+
 
 ```{r}
 p <- ggplot(df, aes(x=id, y=score, color=benchmark))
 p <- p + expand_limits(y=0) + expand_limits(y=20)
-p <- p + ggtitle("Benchmarks based on bit rate (Gbps)")
+p <- p + geom_line()
 p <- p + geom_point()
-p <- p + geom_jitter(size=3, width=0.25, alpha=0.5)
 p <- p + scale_y_continuous(breaks = seq(from=0, to=30, by=2))
+p <- p + scale_x_continuous(breaks = seq(from=0, to=length(unique(df$id)), by=1),
+                            minor_breaks = FALSE)
 p
 ```
 
-## ECDFs
+## ECDF
 
-[ECDFs](https://en.wikipedia.org/wiki/Empirical_distribution_function) summarize data by showing what proportion of results were above and below a given score.
+[ECDF plot](https://en.wikipedia.org/wiki/Empirical_distribution_function)
+summarizes data by showing what proportion of results were above and
+below a given score.
 
 ```{r}
 p <- ggplot(df, aes(score, color=benchmark))
 p <- p + facet_wrap(~benchmark, scales="free")
-p <- p + ggtitle("Benchmarks based on bit rate (Gbps)")
 p <- p + stat_ecdf()
 p <- p + scale_y_continuous(labels = scales::percent)
 p
 ```
 
+## Density
+
+[Density plot](https://en.wikipedia.org/wiki/Density_estimation) estimates how common different scores are. It is like
+a smoothed out histogram: the plot is higher above the more common
+scores.
+
+```{r}
+p <- ggplot(df, aes(score, fill=benchmark, color = benchmark))
+p <- p + facet_wrap(~benchmark, scales="free")
+p <- p + geom_density(alpha = 0.1)
+p
+```
+
+## Violin
+
+[Violin plot](https://en.wikipedia.org/wiki/Violin_plot) combined with
+[Scatter plot](https://en.wikipedia.org/wiki/Scatter_plot) shows the
+values for each benchmark and estimates their distribution with a
+floating density plot.
+
+Random jitter is added on the X-axis to prevent points from overlapping too much.
+
+```{r}
+p <- ggplot(df, aes(benchmark, score))
+p <- p + expand_limits(y=0) + expand_limits(y=30)
+p <- p + geom_violin()
+p <- p + geom_jitter(width=0.25, color="blue", alpha=0.5)
+p <- p + stat_summary(fun.data=mean_se)
+p <- p + scale_y_continuous(breaks = seq(from=0, to=30, by=1), minor_breaks = NULL)
+p
+```
