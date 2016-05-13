@@ -26,11 +26,11 @@ let
         tar cfJ $out/state.tar.xz $out/state
         rm -rf $out/state
         mkdir -p $out/nix-support
-        echo "file tarball $out/state.tar.xz" >> $out/nix-support/hydra-build-products
+        echo "file state $out/state.tar.xz" >> $out/nix-support/hydra-build-products
       fi
       if test -f $out/log.txt; then
         mkdir -p $out/nix-support
-        echo "doc none $out/log.txt" >> $out/nix-support/hydra-build-products
+        echo "file log $out/log.txt" >> $out/nix-support/hydra-build-products
       fi
     '';
     alwaysSucceed = true;
