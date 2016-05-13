@@ -21,6 +21,8 @@ let
       if test -d state; then
         /var/setuid-wrappers/sudo chown -R $(whoami) state
         tar cfJ $out/state.tar.xz state
+        test -d $out/nix-support || mkdir -p $out/nix-support
+        echo "file tarball $out/state.tar.xz" >> $out/nix-support/hydra-build-products
       fi
     '';
     alwaysSucceed = true;
