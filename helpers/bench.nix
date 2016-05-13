@@ -23,7 +23,7 @@ let
     installPhase = ''
       if test -d $out/state; then
         /var/setuid-wrappers/sudo chown -R $(whoami) $out/state
-        tar cfJ $out/state.tar.xz $out/state
+        (cd $out; tar cfJ state.tar.xz state)
         rm -rf $out/state
         mkdir -p $out/nix-support
         echo "file state $out/state.tar.xz" >> $out/nix-support/hydra-build-products
