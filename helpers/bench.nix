@@ -125,6 +125,9 @@ let
     ${concatMapStringsSep "\n" (toCSV.iperf "iperf1500") snabbBenchTestNFV}
     ${concatMapStringsSep "\n" (toCSV.iperf "iperf9000") snabbBenchTestNFVJumbo}
     ${concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64")    snabbBenchTestNFVPacketblaster}
+    # Make CSV file available via Hydra
+    mkdir -p $out/nix-support
+    echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
   '';
 
   benchmark-report = runCommand "snabb-performance-report"
