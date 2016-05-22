@@ -2,7 +2,7 @@
 # specify how many times is each benchmark ran
 , numTimesRunBenchmark ? 20
 # specify on what hardware will the benchmarks be ran
-, requiredSystemFeatures ? [ "performance" ]
+, requiredSystemFeatures ? [ "lugano" ]
 , SNABB_PCI0 ? "0000:01:00.0"
 , SNABB_PCI_INTEL0 ? "0000:01:00.0"
 , SNABB_PCI_INTEL1 ? "0000:01:00.1"
