@@ -3,6 +3,7 @@
   # specify how many times is each benchmark ran
 { numTimesRunBenchmark ? 1
 , nixpkgs ? (fetchTarball https://github.com/NixOS/nixpkgs/archive/37e7e86ddd09d200bbdfd8ba8ec2fd2f0621b728.tar.gz)
+, snabb
 }:
 
 with (import nixpkgs {});
@@ -12,16 +13,11 @@ with vmTools;
 let
   # build functions for different software using overrides 
 
-  buildSnabb = version: hash:
+  buildSnabb = version:
      snabbswitch.overrideDerivation (super: {
        name = "snabb-${version}";
        inherit version;
-       src = fetchFromGitHub {
-          owner = "snabbco";
-          repo = "snabb";
-          rev = "v${version}";
-          sha256 = hash;
-       };
+       src = snabb;
      });
   buildQemu = version: hash:
      qemu.overrideDerivation (super: {
@@ -59,9 +55,10 @@ let
   # define software stacks
 
   snabbs = [
-    (buildSnabb "2016.03" "0wr54m0vr49l51pqj08z7xnm2i97x7183many1ra5bzzg5c5waky")
-    (buildSnabb "2016.04" "1b5g477zy6cr5d9171xf8zrhhq6wxshg4cn78i5bki572q86kwlx")
-    (buildSnabb "2016.05" "1xd926yplqqmgl196iq9lnzg3nnswhk1vkav4zhs4i1cav99ayh8")
+    (buildSnabb "lukegomatrix")
+    #(buildSnabb "2016.03" "0wr54m0vr49l51pqj08z7xnm2i97x7183many1ra5bzzg5c5waky")
+    #(buildSnabb "2016.04" "1b5g477zy6cr5d9171xf8zrhhq6wxshg4cn78i5bki572q86kwlx")
+    #(buildSnabb "2016.05" "1xd926yplqqmgl196iq9lnzg3nnswhk1vkav4zhs4i1cav99ayh8")
   ];
   dpdks = kernel: map (x: x kernel) [
     (buildDpdk "16.04" "0yrz3nnhv65v2jzz726bjswkn8ffqc1sr699qypc9m78qrdljcfn")
