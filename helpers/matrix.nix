@@ -13,6 +13,20 @@ with vmTools;
 let
   # build functions for different software using overrides 
 
+  dpdkports = {
+    base  = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/snabbnfv-bench.port";
+    nomrg = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/snabbnfv-bench-no-mrg_rxbuf.port";
+    noind = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/snabbnfv-bench-no-indirect_desc.port";
+  };
+
+  iperfports = {
+    base         = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/same_vlan.ports";
+    filter       = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/filter.ports";
+    ipsec        = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/crypto.ports";
+    l2tpv3       = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/tunnel.ports";
+    l2tpv3_ipsec = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/crypto-tunnel.ports";
+  };
+
   buildSnabb = version:
      snabbswitch.overrideDerivation (super: {
        name = "snabb-${version}";
@@ -62,11 +76,11 @@ let
   ];
   dpdks = kernel: map (x: x kernel) [
     (buildDpdk "16.04" "0yrz3nnhv65v2jzz726bjswkn8ffqc1sr699qypc9m78qrdljcfn")
-    (buildDpdk "2.2.0" "03b1pliyx5psy3mkys8j1mk6y2x818j6wmjrdvpr7v0q6vcnl83p")
-    (buildDpdk "2.1.0" "0h1lkalvcpn8drjldw50kipnf88ndv2wvflgkkyrmya5ga325czp")
-    (buildDpdk "2.0.0" "0gzzzgmnl1yzv9vs3bbdfgw61ckiakgqq93b9pc4v92vpsiqjdv4")
-    (buildDpdk "1.8.0" "0f8rvvp2y823ipnxszs9lh10iyiczkrhh172h98kb6fr1f1qclwz")
-    (buildDpdk "1.7.1" "0yd60ww5xhf0dfl2x1pqx1m2363b2b7zp89mcya86j20gi3bgvlx")
+    #(buildDpdk "2.2.0" "03b1pliyx5psy3mkys8j1mk6y2x818j6wmjrdvpr7v0q6vcnl83p")
+    #(buildDpdk "2.1.0" "0h1lkalvcpn8drjldw50kipnf88ndv2wvflgkkyrmya5ga325czp")
+    #(buildDpdk "2.0.0" "0gzzzgmnl1yzv9vs3bbdfgw61ckiakgqq93b9pc4v92vpsiqjdv4")
+    #(buildDpdk "1.8.0" "0f8rvvp2y823ipnxszs9lh10iyiczkrhh172h98kb6fr1f1qclwz")
+    #(buildDpdk "1.7.1" "0yd60ww5xhf0dfl2x1pqx1m2363b2b7zp89mcya86j20gi3bgvlx")
   ];
   qemus = [
     # TODO: https://hydra.snabb.co/build/4596
@@ -103,21 +117,24 @@ let
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/log.txt
       '';
     });
-  mkMatrixBenchNFV = { snabb, qemu, kernel, dpdk, ... }@attrs:
-   mkSnabbBenchTest (defaults // {
-      name = "${snabb.name}-${qemu.name}-${dpdk.name}-iperf-1500";
+  mkMatrixBenchNFVIperf = { snabb, qemu, kernel, conf, mtu, ... }@attrs:
+    let confFile = iperfports.${conf}; in
+    mkSnabbBenchTest (defaults // {
+      name = "${snabb.name}-${qemu.name}-iperf-${mtu}-${conf}";
       inherit (attrs) snabb qemu;
-      testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
+      testNixEnv = mkNixTestEnv { inherit kernel; };
       useNixTestEnv = true;
       hardware = "murren";
       checkPhase = ''
+        export SNABB_IPERF_BENCH_CONF=${confFile}
         cd src
         /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
       '';
    });
-  mkMatrixBenchNFVPacketblaster = { snabb, qemu, kernel, dpdk, ... }@attrs:
+  mkMatrixBenchNFVDPDK = { snabb, qemu, kernel, dpdk, pktsize, conf, ... }@attrs:
+    let confFile = dpdkports.${conf}; in
     mkSnabbBenchTest (defaults // {
-      name = "${snabb.name}-${qemu.name}-${dpdk.name}-nfv-l2fwd-64";
+      name = "${snabb.name}-${qemu.name}-${dpdk.name}-nfv-l2fwd-${pktsize}-${conf}";
       inherit (attrs) snabb qemu;
       useNixTestEnv = true;
       testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
@@ -128,11 +145,8 @@ let
       checkPhase = ''
         cd src
 
-        # TODO: for NICless run
-        #export SNABB_PCI0=
-        #export SNABB_PCI_INTEL0=
-        #export SNABB_PCI_INTEL1=
-
+        export SNABB_PACKET_SIZES=${pktsize}
+        export SNABB_DPDK_BENCH_CONF=${confFile}
         /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/dpdk_bench.sh |& tee $out/log.txt
       '';
     });
@@ -174,8 +188,18 @@ in {
         params = { inherit snabb qemu dpdk kernel; };
       in [
         (mkMatrixBenchBasic params)
-        (mkMatrixBenchNFV params)
-        (mkMatrixBenchNFVPacketblaster params)
+        (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "base";}))
+        (mkMatrixBenchNFVIperf (params // {mtu = "9000"; conf = "base";}))
+        (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "filter";}))
+        (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "ipsec";}))
+        (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "l2tpv3";}))
+        (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "l2tpv3_ipsec";}))
+        (mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "base";}))
+        (mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "nomrg";}))
+        (mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "noind";}))
+        (mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "base";}))
+        (mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "nomrg";}))
+        (mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "noind";}))
       ]
     ) qemus)) snabbs))) (dpdks kernel)))) kernels));
 }
