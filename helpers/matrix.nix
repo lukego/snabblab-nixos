@@ -109,7 +109,7 @@ let
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
       useNixTestEnv = true;
-      hardware = "lugano";
+      hardware = "murren";
       checkPhase = ''
         cd src
         /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
@@ -124,7 +124,7 @@ let
       isDPDK = true;
       # TODO: get rid of this
       __useChroot = false;
-      hardware = "lugano";
+      hardware = "murren";
       checkPhase = ''
         cd src
 
@@ -140,7 +140,7 @@ let
     mkSnabbBenchTest (defaults // {
       name = "${snabb.name}-packetblaster-64";
       inherit (attrs) snabb;
-      hardware = "lugano";
+      hardware = "murren";
       checkPhase = ''
         cd src
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster replay --duration 1 \
@@ -151,7 +151,7 @@ let
     mkSnabbBenchTest (defaults // {
       name = "${snabb.name}-packetblaster-synth-64";
       inherit (attrs) snabb;
-      hardware = "lugano";
+      hardware = "murren";
       checkPhase = ''
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster synth \
           --src 11:11:11:11:11:11 --dst 22:22:22:22:22:22 --sizes 64 \
@@ -176,8 +176,6 @@ in {
         (mkMatrixBenchBasic params)
         (mkMatrixBenchNFV params)
         (mkMatrixBenchNFVPacketblaster params)
-        (mkMatrixBenchPacketblaster params)
-        (mkMatrixBenchPacketblasterSynth params)
       ]
     ) qemus)) snabbs))) (dpdks kernel)))) kernels));
 }
