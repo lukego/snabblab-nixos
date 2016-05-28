@@ -105,7 +105,7 @@ let
     });
   mkMatrixBenchNFV = { snabb, qemu, kernel, dpdk, ... }@attrs:
    mkSnabbBenchTest (defaults // {
-      name = "${snabb.name}-${qemu.name}-${dpdk.name}-nfv";
+      name = "${snabb.name}-${qemu.name}-${dpdk.name}-iperf-1500";
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
       useNixTestEnv = true;
@@ -117,7 +117,7 @@ let
    });
   mkMatrixBenchNFVPacketblaster = { snabb, qemu, kernel, dpdk, ... }@attrs:
     mkSnabbBenchTest (defaults // {
-      name = "${snabb.name}-${qemu.name}-${dpdk.name}-nfv-dpdk64";
+      name = "${snabb.name}-${qemu.name}-${dpdk.name}-nfv-l2fwd-64";
       inherit (attrs) snabb qemu;
       useNixTestEnv = true;
       testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
@@ -133,7 +133,7 @@ let
         #export SNABB_PCI_INTEL0=
         #export SNABB_PCI_INTEL1=
 
-        /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/packetblaster_bench.sh |& tee $out/log.txt
+        /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/dpdk_bench.sh |& tee $out/log.txt
       '';
     });
   mkMatrixBenchPacketblaster = { snabb, ... }@attrs:
