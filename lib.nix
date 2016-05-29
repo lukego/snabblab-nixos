@@ -68,7 +68,8 @@ rec {
       '' + lib.optionalString useNixTestEnv ''
         mkdir ~/.test_env
         cp --no-preserve=mode -r ${testNixEnv}/* ~/.test_env/
-      '';
+      ''; 
+      # work around Emacs syntax highlighting bug with: */
 
       SNABB_KERNEL_PARAMS = lib.optionalString useNixTestEnv
         (if (isDPDK)
@@ -101,7 +102,7 @@ rec {
   buildNTimes = drv: n:
     let
       repeatDrv = i: lib.hydraJob (lib.overrideDerivation drv (attrs: {
-        name = attrs.name + "__id=${toString i}";
+        name = attrs.name + "_id=${toString i}";
         numRepeat = i;
       }));
     in map repeatDrv (lib.range 1 n);

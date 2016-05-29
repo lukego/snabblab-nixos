@@ -13,6 +13,10 @@ with vmTools;
 let
   # build functions for different software using overrides 
 
+  # format version number replacing . with - because nix strips the
+  # .'s from derivation names
+  vsn = version: builtins.replaceStrings ["."] ["-"] version;
+
   dpdkports = {
     base  = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/snabbnfv-bench.port";
     nomrg = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/snabbnfv-bench-no-mrg_rxbuf.port";
@@ -110,7 +114,7 @@ let
 
   mkMatrixBenchBasic = { snabb, ... }@attrs:
     mkSnabbBenchTest (defaults // {
-      name = "basic1__snabb=${snabb.version}__packets=100e6";
+      name = "basic1_snabb=${vsn snabb.version}_packets=100e6";
       hardware = "murren";
       inherit (attrs) snabb;
       checkPhase = ''
@@ -120,7 +124,7 @@ let
   mkMatrixBenchNFVIperf = { snabb, qemu, kernel, conf, mtu, ... }@attrs:
     let confFile = iperfports.${conf}; in
     mkSnabbBenchTest (defaults // {
-      name = "iperf__mtu=${mtu}__conf=${conf}__snabb=${snabb.version}__kernel=${kernel.kernel.version}__qemu=${qemu.version}";
+      name = "iperf_mtu=${mtu}_conf=${conf}_snabb=${vsn snabb.version}_kernel=${vsn kernel.kernel.version}_qemu=${vsn qemu.version}";
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel; };
       useNixTestEnv = true;
@@ -134,7 +138,7 @@ let
   mkMatrixBenchNFVDPDK = { snabb, qemu, kernel, dpdk, pktsize, conf, ... }@attrs:
     let confFile = dpdkports.${conf}; in
     mkSnabbBenchTest (defaults // {
-      name = "l2fwd__pktsize=${pktsize}__conf=${conf}__snabb=${snabb.version}__dpdk=${dpdk.version}__qemu${qemu.version}";
+      name = "l2fwd_pktsize=${pktsize}_conf=${conf}_snabb=${vsn snabb.version}_dpdk=${vsn dpdk.version}_qemu${vsn qemu.version}";
       inherit (attrs) snabb qemu;
       useNixTestEnv = true;
       testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
