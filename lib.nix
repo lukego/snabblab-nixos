@@ -101,7 +101,7 @@ rec {
   buildNTimes = drv: n:
     let
       repeatDrv = i: lib.hydraJob (lib.overrideDerivation drv (attrs: {
-        name = attrs.name + "+num=${toString i}";
+        name = attrs.name + "__id=${toString i}";
         numRepeat = i;
       }));
     in map repeatDrv (lib.range 1 n);

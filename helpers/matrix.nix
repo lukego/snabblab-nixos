@@ -110,7 +110,7 @@ let
 
   mkMatrixBenchBasic = { snabb, ... }@attrs:
     mkSnabbBenchTest (defaults // {
-      name = "${snabb.name}-basic1-100e6";
+      name = "basic1__snabb=${snabb.version}__packets=100e6";
       hardware = "murren";
       inherit (attrs) snabb;
       checkPhase = ''
@@ -120,7 +120,7 @@ let
   mkMatrixBenchNFVIperf = { snabb, qemu, kernel, conf, mtu, ... }@attrs:
     let confFile = iperfports.${conf}; in
     mkSnabbBenchTest (defaults // {
-      name = "bench=iperf__mtu=${mtu}__conf=${conf}__snabb=${snabb.version}__kernel=${kernel.kernel.version}__qemu=${qemu.version}";
+      name = "iperf__mtu=${mtu}__conf=${conf}__snabb=${snabb.version}__kernel=${kernel.kernel.version}__qemu=${qemu.version}";
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel; };
       useNixTestEnv = true;
@@ -134,7 +134,7 @@ let
   mkMatrixBenchNFVDPDK = { snabb, qemu, kernel, dpdk, pktsize, conf, ... }@attrs:
     let confFile = dpdkports.${conf}; in
     mkSnabbBenchTest (defaults // {
-      name = "bench=l2fwd__pktsize=${pktsize}__conf=${conf}__snabb=${snabb.version}__dpdk=${dpdk.version}__qemu${qemu.version}";
+      name = "l2fwd__pktsize=${pktsize}__conf=${conf}__snabb=${snabb.version}__dpdk=${dpdk.version}__qemu${qemu.version}";
       inherit (attrs) snabb qemu;
       useNixTestEnv = true;
       testNixEnv = mkNixTestEnv { inherit kernel dpdk; };
