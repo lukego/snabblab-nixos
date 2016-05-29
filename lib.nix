@@ -97,6 +97,7 @@ rec {
         done
       '';
      } // removeAttrs attrs [ "checkPhase" ]);
+  # workaround Emacs syntax highlighting bug: */
   # buildNTimes: repeat building a derivation for n times
   # buildNTimes: Derivation -> Int -> [Derivation]
   buildNTimes = drv: n:
@@ -136,6 +137,7 @@ rec {
          services.mingetty.autologinUser = "root";
          users.extraUsers.root.initialHashedPassword = lib.mkOverride 150 "";
          networking.usePredictableInterfaceNames = false;
+         boot.blacklistedKernelModules = [ "virtio_net" ];
        })
      ];
      snabb_config = (import <nixpkgs/nixos/lib/eval-config.nix> { modules = snabb_modules; }).config;
