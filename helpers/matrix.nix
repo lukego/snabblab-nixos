@@ -103,7 +103,7 @@ let
   defaults = {
     times = numTimesRunBenchmark;
     # TODO: eventually turn this on
-    # alwaysSucceed = true;
+    alwaysSucceed = true;
     patches = [(fetchurl {
          url = "https://github.com/snabbco/snabb/commit/e78b8b2d567dc54cad5f2eb2bbb9aadc0e34b4c3.patch";
          sha256 = "1nwkj5n5hm2gg14dfmnn538jnkps10hlldav3bwrgqvf5i63srwl";
@@ -233,15 +233,18 @@ in {
           score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
         '' + writeCSV drv benchName "Mpps";
       };
-  in runCommand "snabb-performance-csv"
-    { buildInputs = [ pkgs.gawk pkgs.bc ];
-      preferLocalBuild = true; }
-    ''
-      mkdir $out
-      echo "benchmark,id,score,unit" > $out/bench.csv
-      ${lib.concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64") benchmarks-list}
-      # Make CSV file available via Hydra
-      mkdir -p $out/nix-support
-      echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
-    '';
+  in stdenv.mkDerivation { 
+       name = "snabb-performance-csv";
+       buildInputs = [ pkgs.gawk pkgs.bc ];
+       preferLocalBuild = true;
+       builder = writeText "csv-builder.sh" ''
+         source $stdenv/setup
+         mkdir $out
+         echo "benchmark,id,score,unit,drv" > $out/bench.csv
+         ${lib.concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64") benchmarks-list}
+         # Make CSV file available via Hydra
+         mkdir -p $out/nix-support
+         echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
+       '';
+   };
 }
