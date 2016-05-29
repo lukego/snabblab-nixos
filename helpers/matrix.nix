@@ -182,22 +182,35 @@ in {
     snabbs qemus (map (k: dpdks k)  kernels)
   ]);
   # benchmarks using a matrix of software and a number of repeats
-  benchmarks = listDrvToAttrs
-    # TODO: should probably abstract this out, but for now it does the job
-    (lib.flatten (map (kernel:
-    (lib.flatten (map (dpdk:
+  benchmarks = listDrvToAttrs (
+    # basic1 depends on only snabb
     (lib.flatten (map (snabb:
-    lib.flatten (map (qemu:
+      (mkMatrixBenchBasic {snabb = snabb;}))
+    snabbs))
+    ++
+    # iperf depends on snabb, qemu, and guest kernel
+    (lib.flatten (map (kernel:
+    (lib.flatten (map (qemu:
+    lib.flatten (map (snabb:
       let
-        params = { inherit snabb qemu dpdk kernel; };
+        params = { inherit snabb qemu kernel; };
       in [
-        (mkMatrixBenchBasic params)
         (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "base";}))
         (mkMatrixBenchNFVIperf (params // {mtu = "9000"; conf = "base";}))
         (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "filter";}))
         (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "ipsec";}))
         (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "l2tpv3";}))
         (mkMatrixBenchNFVIperf (params // {mtu = "1500"; conf = "l2tpv3_ipsec";}))
+      ]
+    ) snabbs)) qemus))) kernels))
+    ++
+    # l2fwd depends on snabb, qemu, dpdk and just uses the latest kernel
+    (lib.flatten (map (dpdk:
+    (lib.flatten (map (qemu:
+    (lib.flatten (map (snabb:
+      let
+        params = { inherit snabb qemu dpdk; kernel = linuxPackages_4_4; };
+      in [
         (mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "base";}))
         (mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "nomrg";}))
         (mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "noind";}))
@@ -205,5 +218,6 @@ in {
         (mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "nomrg";}))
         (mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "noind";}))
       ]
-    ) qemus)) snabbs))) (dpdks kernel)))) kernels));
+    ) snabbs))) qemus))) (dpdks linuxPackages_4_4)))
+    );
 }
