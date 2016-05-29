@@ -176,13 +176,8 @@ let
           --duration 1 "$SNABB_PCI_INTEL0" |& tee $out/log.txt
       '';
     });
-in {
-  # all versions of software used in benchmarks
-  software = listDrvToAttrs (lib.flatten [
-    snabbs qemus (map (k: dpdks k)  kernels)
-  ]);
   # benchmarks using a matrix of software and a number of repeats
-  benchmarks = listDrvToAttrs (
+  benchmarks-list = (
     # basic1 depends on only snabb
     (lib.flatten (map (snabb:
       (mkMatrixBenchBasic {snabb = snabb;}))
@@ -220,4 +215,33 @@ in {
       ]
     ) snabbs))) qemus))) (dpdks linuxPackages_4_4)))
     );
+in {
+  # all versions of software used in benchmarks
+  software = listDrvToAttrs (lib.flatten [
+    snabbs qemus (map (k: dpdks k)  kernels)
+  ]);
+  benchmarks = listDrvToAttrs benchmarks-list;
+  benchmark-csv = 
+    let 
+      # Functions providing commands to convert logs to CSV
+      # Fields: benchmark,id,score,unit,name
+      writeCSV = drv: benchName: unit:
+                   ''if test -z "$score"; then score="NA"; fi
+                     echo ${benchName},${toString (drv.numRepeat or 0)},$score,${unit},${drv.name} >> $out/bench.csv'';
+      toCSV = {
+        dpdk = benchName: drv: ''
+          score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
+        '' + writeCSV drv benchName "Mpps";
+      };
+  in runCommand "snabb-performance-csv"
+    { buildInputs = [ pkgs.gawk pkgs.bc ];
+      preferLocalBuild = true; }
+    ''
+      mkdir $out
+      echo "benchmark,id,score,unit" > $out/bench.csv
+      ${lib.concatMapStringsSep "\n" (toCSV.dpdk  "dpdk64") benchmarks-list}
+      # Make CSV file available via Hydra
+      mkdir -p $out/nix-support
+      echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
+    '';
 }
