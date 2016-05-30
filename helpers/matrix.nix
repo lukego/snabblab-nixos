@@ -94,8 +94,8 @@ let
     (buildQemu "2.6.0" "1v1lhhd6m59hqgmiz100g779rjq70pik5v4b3g936ci73djlmb69")
   ];
   kernels = [
-    linuxPackages_4_1
-    linuxPackages_4_3
+    #linuxPackages_4_1
+    #linuxPackages_4_3
     linuxPackages_4_4
   ];
 
