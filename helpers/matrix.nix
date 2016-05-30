@@ -126,7 +126,7 @@ let
       hardware = "murren";
       inherit (attrs) snabb;
       checkPhase = ''
-        /var/setuid-wrappers/sudo ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/lukego-log.txt
+        /var/setuid-wrappers/sudo ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/log.txt
       '';
       passthru.toCSV = drv: ''
         score=$(awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt)
@@ -151,7 +151,7 @@ let
       checkPhase = ''
         export SNABB_IPERF_BENCH_CONF=${confFile}
         cd src
-        /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/lukego-log.txt
+        /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
       '';
    });
   mkMatrixBenchNFVDPDK = { snabb, qemu, kernel, dpdk, pktsize, conf, ... }@attrs:
@@ -177,7 +177,7 @@ let
 
         export SNABB_PACKET_SIZES=${pktsize}
         export SNABB_DPDK_BENCH_CONF=${confFile}
-        /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/dpdk_bench.sh |& tee $out/lukego-log.txt
+        /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/dpdk_bench.sh |& tee $out/log.txt
       '';
     });
   mkMatrixBenchPacketblaster = { snabb, ... }@attrs:
@@ -193,7 +193,7 @@ let
       checkPhase = ''
         cd src
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster replay --duration 1 \
-          program/snabbnfv/test_fixtures/pcap/64.pcap "$SNABB_PCI_INTEL0" |& tee $out/lukego-log.txt
+          program/snabbnfv/test_fixtures/pcap/64.pcap "$SNABB_PCI_INTEL0" |& tee $out/log.txt
       '';
     });
   mkMatrixBenchPacketblasterSynth = { snabb, ... }@attrs:
@@ -209,7 +209,7 @@ let
       checkPhase = ''
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster synth \
           --src 11:11:11:11:11:11 --dst 22:22:22:22:22:22 --sizes 64 \
-          --duration 1 "$SNABB_PCI_INTEL0" |& tee $out/lukego-log.txt
+          --duration 1 "$SNABB_PCI_INTEL0" |& tee $out/log.txt
       '';
     });
   # benchmarks using a matrix of software and a number of repeats
