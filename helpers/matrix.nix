@@ -99,11 +99,19 @@ let
     linuxPackages_4_4
   ];
 
+
+  # Functions providing commands to convert logs to CSV
+  # Fields: benchmark,id,score,unit,name
+  writeCSV = drv: benchName: unit: ''
+     if test -z "$score"; then score="NA"; fi
+     echo ${benchName},${drv.mtu or "N/A"},${drv.pktsize or "N/A"},${drv.conf or "N/A"},${drv.snabb.version},${drv.kernel.version or "N/A"},${drv.qemu.version or "N/A"},${toString drv.numRepeat},$score,${unit} >> $out/bench.csv
+   '';
+
   # mkSnabbBenchTest defaults
   defaults = {
     times = numTimesRunBenchmark;
     # TODO: eventually turn this on
-    # alwaysSucceed = true;
+    alwaysSucceed = true;
     patches = [(fetchurl {
          url = "https://github.com/snabbco/snabb/commit/e78b8b2d567dc54cad5f2eb2bbb9aadc0e34b4c3.patch";
          sha256 = "1nwkj5n5hm2gg14dfmnn538jnkps10hlldav3bwrgqvf5i63srwl";
@@ -120,6 +128,10 @@ let
       checkPhase = ''
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/lukego-log.txt
       '';
+      passthru.toCSV = drv: ''
+        score=$(awk '/Mpps/ {print $(NF-1)}' < ${drv}/log.txt)
+        ${writeCSV drv "basic" "Mpps"}
+      '' ;
     });
   mkMatrixBenchNFVIperf = { snabb, qemu, kernel, conf, mtu, ... }@attrs:
     let confFile = iperfports.${conf}; in
@@ -127,6 +139,13 @@ let
       name = "iperf_mtu=${mtu}_conf=${conf}_snabb=${vsn snabb.version}_kernel=${vsn kernel.kernel.version}_qemu=${vsn qemu.version}";
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel; };
+      passthru = {
+        inherit mtu kernel conf qemu;
+        toCSV = drv: ''
+          score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
+          ${writeCSV drv "basic" "Gbps"}
+       '';
+      };
       useNixTestEnv = true;
       hardware = "murren";
       checkPhase = ''
@@ -146,6 +165,13 @@ let
       # TODO: get rid of this
       __useChroot = false;
       hardware = "murren";
+      passthru = {
+        inherit pktsize kernel conf qemu;
+        toCSV = drv: ''
+          score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
+          ${writeCSV drv "dpdk64" "Mpps"}
+       '';
+      };
       checkPhase = ''
         cd src
 
@@ -159,6 +185,11 @@ let
       name = "${snabb.name}-packetblaster-64";
       inherit (attrs) snabb;
       hardware = "murren";
+      passthru.toCSV = drv: ''
+        pps=$(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g)
+        score=$(echo "scale=2; $pps / 1000000" | bc)
+        ${writeCSV drv "blast" "Mpps"}
+      '';
       checkPhase = ''
         cd src
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster replay --duration 1 \
@@ -170,19 +201,19 @@ let
       name = "${snabb.name}-packetblaster-synth-64";
       inherit (attrs) snabb;
       hardware = "murren";
+      passthru.toCSV = drv: ''
+        pps=$(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g)
+        score=$(echo "scale=2; $pps / 1000000" | bc)
+        ${writeCSV drv "blast" "Mpps"}
+      '';
       checkPhase = ''
         /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster synth \
           --src 11:11:11:11:11:11 --dst 22:22:22:22:22:22 --sizes 64 \
           --duration 1 "$SNABB_PCI_INTEL0" |& tee $out/lukego-log.txt
       '';
     });
-in {
-  # all versions of software used in benchmarks
-  software = listDrvToAttrs (lib.flatten [
-    snabbs qemus (map (k: dpdks k)  kernels)
-  ]);
   # benchmarks using a matrix of software and a number of repeats
-  benchmarks = listDrvToAttrs (
+  benchmarks-list = (
     # basic1 depends on only snabb
     (lib.flatten (map (snabb:
       (mkMatrixBenchBasic {snabb = snabb;}))
@@ -219,5 +250,27 @@ in {
         (mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "noind";}))
       ]
     ) snabbs))) qemus))) (dpdks linuxPackages_4_4)))
-    );
+  );
+in {
+  # all versions of software used in benchmarks
+  software = listDrvToAttrs (lib.flatten [
+    snabbs qemus (map (k: dpdks k)  kernels)
+  ]);
+  benchmarks = listDrvToAttrs (map lib.hydraJob benchmarks-list);
+  # uses writeText until following is merged https://github.com/NixOS/nixpkgs/pull/15803
+  benchmark-csv = stdenv.mkDerivation { 
+    name = "snabb-performance-csv";
+    buildInputs = [ pkgs.gawk pkgs.bc ];
+    preferLocalBuild = true;
+    builder = writeText "csv-builder.sh" ''
+      source $stdenv/setup
+      mkdir -p $out/nix-support
+
+      echo "benchmark,mtu,pktsize,config,snabb,kernel,qemu,id,score,unit" > $out/bench.csv
+      ${lib.concatMapStringsSep "\n" (drv: drv.toCSV drv) benchmarks-list}
+
+      # Make CSV file available via Hydra
+      echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
+    '';
+   };
 }

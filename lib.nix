@@ -97,14 +97,15 @@ rec {
         done
       '';
      } // removeAttrs attrs [ "checkPhase" ]);
+  # workaround Emacs syntax highlighting bug: */
   # buildNTimes: repeat building a derivation for n times
   # buildNTimes: Derivation -> Int -> [Derivation]
   buildNTimes = drv: n:
     let
-      repeatDrv = i: lib.hydraJob (lib.overrideDerivation drv (attrs: {
+      repeatDrv = i: lib.overrideDerivation drv (attrs: {
         name = attrs.name + "_id=${toString i}";
         numRepeat = i;
-      }));
+      });
     in map repeatDrv (lib.range 1 n);
 
   # runs the benchmark without chroot to be able to use pci device assigning
@@ -126,7 +127,7 @@ rec {
      snabb_modules = [
        <nixpkgs/nixos/modules/profiles/qemu-guest.nix>
        ({config, pkgs, ...}: {
-         environment.systemPackages = with pkgs; [ inetutils screen python pciutils ethtool tcpdump netcat iperf ];
+         environment.systemPackages = with pkgs; [ inetutils screen python pciutils ethtool tcpdump netcat iperf2 ];
          fileSystems."/".device = "/dev/disk/by-label/nixos";
          boot.loader.grub.device = "/dev/sda";
 
@@ -136,6 +137,7 @@ rec {
          services.mingetty.autologinUser = "root";
          users.extraUsers.root.initialHashedPassword = lib.mkOverride 150 "";
          networking.usePredictableInterfaceNames = false;
+         boot.blacklistedKernelModules = [ "virtio_net" ];
        })
      ];
      snabb_config = (import <nixpkgs/nixos/lib/eval-config.nix> { modules = snabb_modules; }).config;
