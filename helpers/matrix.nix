@@ -104,7 +104,7 @@ let
   # Fields: benchmark,id,score,unit,name
   writeCSV = drv: benchName: unit: ''
      if test -z "$score"; then score="NA"; fi
-     echo ${benchName},${drv.mtu or "NA"},${drv.pktsize or "NA"},${drv.conf or "NA"},${drv.snabb.version},${drv.kernel.version or "NA"},${drv.qemu.version or "NA"},${drv.dpdk.version or "NA"},${toString drv.numRepeat},$score,${unit} >> $out/bench.csv
+     echo ${benchName},${drv.meta.mtu or "NA"},${drv.meta.pktsize or "NA"},${drv.meta.conf or "NA"},${drv.meta.snabbVersion},${drv.meta.kernelVersion or "NA"},${drv.meta.qemuVersion or "NA"},${drv.meta.dpdkVersion or "NA"},${lib.head (builtins.match ".+_id=([0-9]+)$" drv.name)},$score,${unit} >> $out/bench.csv
    '';
 
   # mkSnabbBenchTest defaults
@@ -139,8 +139,11 @@ let
       name = "iperf_mtu=${mtu}_conf=${conf}_snabb=${vsn snabb.version}_kernel=${vsn kernel.kernel.version}_qemu=${vsn qemu.version}";
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel; };
-      passthru = {
-        inherit mtu kernel conf qemu;
+      meta = {
+        inherit mtu conf;
+        snabbVersion = snabb.version;
+        qemuVersion = qemu.version;
+        kernelVersion = kernel.kernel.version;
         toCSV = drv: ''
           score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
           ${writeCSV drv "iperf" "Gbps"}
@@ -165,8 +168,12 @@ let
       # TODO: get rid of this
       __useChroot = false;
       hardware = "murren";
-      passthru = {
-        inherit pktsize kernel conf qemu;
+      meta = {
+        inherit pktsize conf;
+        snabbVersion = snabb.version;
+        qemuVersion = qemu.version;
+        kernelVersion = kernel.version;
+        dpdkVersion = dpdk.version;
         toCSV = drv: ''
           score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
           ${writeCSV drv "l2fwd" "Mpps"}
@@ -267,7 +274,7 @@ in {
       mkdir -p $out/nix-support
 
       echo "benchmark,mtu,pktsize,config,snabb,kernel,qemu,dpdk,id,score,unit" > $out/bench.csv
-      ${lib.concatMapStringsSep "\n" (drv: drv.toCSV drv) benchmarks-list}
+      ${lib.concatMapStringsSep "\n" (drv: drv.meta.toCSV drv) benchmarks-list}
 
       # Make CSV file available via Hydra
       echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
