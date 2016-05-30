@@ -104,7 +104,7 @@ let
   # Fields: benchmark,id,score,unit,name
   writeCSV = drv: benchName: unit: ''
      if test -z "$score"; then score="NA"; fi
-     echo ${benchName},${drv.mtu or "N/A"},${drv.pktsize or "N/A"},${drv.conf or "N/A"},${drv.snabb.version},${drv.kernel.version or "N/A"},${drv.qemu.version or "N/A"},${toString drv.numRepeat},$score,${unit} >> $out/bench.csv
+     echo ${benchName},${drv.mtu or "NA"},${drv.pktsize or "NA"},${drv.conf or "NA"},${drv.snabb.version},${drv.kernel.version or "NA"},${drv.qemu.version or "NA"},${drv.dpdk.version or "NA"},${toString drv.numRepeat},$score,${unit} >> $out/bench.csv
    '';
 
   # mkSnabbBenchTest defaults
@@ -143,7 +143,7 @@ let
         inherit mtu kernel conf qemu;
         toCSV = drv: ''
           score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
-          ${writeCSV drv "basic" "Gbps"}
+          ${writeCSV drv "iperf" "Gbps"}
        '';
       };
       useNixTestEnv = true;
@@ -169,7 +169,7 @@ let
         inherit pktsize kernel conf qemu;
         toCSV = drv: ''
           score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
-          ${writeCSV drv "dpdk64" "Mpps"}
+          ${writeCSV drv "l2fwd" "Mpps"}
        '';
       };
       checkPhase = ''
@@ -266,7 +266,7 @@ in {
       source $stdenv/setup
       mkdir -p $out/nix-support
 
-      echo "benchmark,mtu,pktsize,config,snabb,kernel,qemu,id,score,unit" > $out/bench.csv
+      echo "benchmark,mtu,pktsize,config,snabb,kernel,qemu,dpdk,id,score,unit" > $out/bench.csv
       ${lib.concatMapStringsSep "\n" (drv: drv.toCSV drv) benchmarks-list}
 
       # Make CSV file available via Hydra
