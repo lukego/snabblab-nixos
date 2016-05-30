@@ -31,13 +31,6 @@ let
     l2tpv3_ipsec = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/crypto-tunnel.ports";
   };
 
-  # Functions providing commands to convert logs to CSV
-  # Fields: benchmark,id,score,unit,name
-  writeCSV = drv: benchName: unit: ''
-    if test -z "$score"; then score="NA"; fi
-    echo ${benchName},${toString drv.numRepeat},$score,${unit},${drv.name} >> $out/bench.csv
-  '';
-
   buildSnabb = version:
      snabbswitch.overrideDerivation (super: {
        name = "snabb-${version}";
@@ -106,6 +99,14 @@ let
     linuxPackages_4_4
   ];
 
+
+  # Functions providing commands to convert logs to CSV
+  # Fields: benchmark,id,score,unit,name
+  writeCSV = drv: benchName: unit: ''
+     if test -z "$score"; then score="NA"; fi
+     echo ${benchName},${drv.mtu or "N/A"},${drv.pktsize or "N/A"},${drv.conf or "N/A"},${drv.snabb.version},${drv.kernel.version or "N/A"},${drv.qemu.version or "N/A"},${toString drv.numRepeat},$score,${unit} >> $out/bench.csv
+   '';
+
   # mkSnabbBenchTest defaults
   defaults = {
     times = numTimesRunBenchmark;
@@ -138,10 +139,13 @@ let
       name = "iperf_mtu=${mtu}_conf=${conf}_snabb=${vsn snabb.version}_kernel=${vsn kernel.kernel.version}_qemu=${vsn qemu.version}";
       inherit (attrs) snabb qemu;
       testNixEnv = mkNixTestEnv { inherit kernel; };
-      passthru.toCSV = drv: ''
-        score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
-        ${writeCSV drv "basic" "Gbps"}
-      '';
+      passthru = {
+        inherit mtu kernel conf qemu;
+        toCSV = drv: ''
+          score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
+          ${writeCSV drv "basic" "Gbps"}
+       '';
+      };
       useNixTestEnv = true;
       hardware = "murren";
       checkPhase = ''
@@ -161,10 +165,13 @@ let
       # TODO: get rid of this
       __useChroot = false;
       hardware = "murren";
-      passthru.toCSV = drv: ''
-        score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
-        ${writeCSV drv "dpdk64" "Mpps"}
-      '';
+      passthru = {
+        inherit pktsize kernel conf qemu;
+        toCSV = drv: ''
+          score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
+          ${writeCSV drv "dpdk64" "Mpps"}
+       '';
+      };
       checkPhase = ''
         cd src
 
@@ -257,11 +264,12 @@ in {
     preferLocalBuild = true;
     builder = writeText "csv-builder.sh" ''
       source $stdenv/setup
-      mkdir $out
-      echo "benchmark,id,score,unit,drv" > $out/bench.csv
-      ${lib.concatMapStringsSep "\n" (drv: drv.toCSV drv) benchmarks-list}
-      # Make CSV file available via Hydra
       mkdir -p $out/nix-support
+
+      echo "benchmark,mtu,pktsize,config,snabb,kernel,qemu,id,score,unit" > $out/bench.csv
+      ${lib.concatMapStringsSep "\n" (drv: drv.toCSV drv) benchmarks-list}
+
+      # Make CSV file available via Hydra
       echo "file CSV $out/bench.csv" >> $out/nix-support/hydra-build-products
     '';
    };
