@@ -172,7 +172,7 @@ let
         inherit pktsize conf;
         snabbVersion = snabb.version;
         qemuVersion = qemu.version;
-        kernelVersion = kernel.version;
+        kernelVersion = kernel.kernel.version;
         dpdkVersion = dpdk.version;
         toCSV = drv: ''
           score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
