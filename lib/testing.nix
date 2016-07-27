@@ -102,7 +102,7 @@ rec {
           sudo chown -R $(whoami) $NIX_BUILD_TOP/state
           (cd $NIX_BUILD_TOP;
            tar cfJ $out/state.tar.xz state)
-          echo "file state $out/state.tar.xz"  >> $out/nix-support-hydra-build-products
+          echo "file state $out/state.tar.xz"  >> $out/nix-support/hydra-build-products
         fi
       '';
 
