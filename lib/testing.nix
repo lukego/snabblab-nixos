@@ -95,6 +95,10 @@ rec {
             echo "file log $f"  >> $out/nix-support/hydra-build-products
           fi
         done
+        if [ -d state ]; then
+          tar cfJ $out/state.tar.xz state
+          echo "file state $f"  >> $out/nix-support-hydra-build-products
+        fi
       '';
 
       meta = {
