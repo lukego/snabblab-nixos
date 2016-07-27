@@ -90,14 +90,19 @@ rec {
       '';
 
       installPhase = ''
+        # Fix ownership of outputs which may be created by root
+        export PATH=$PATH:/var/setuid-wrappers/
+        sudo chown -R $(whoami) $out
         for f in $(ls $out/* | sort); do
           if [ -f $f ]; then
-            echo "file log $f"  >> $out/nix-support/hydra-build-products
+            gzip $f
+            echo "file log $f.gz"  >> $out/nix-support/hydra-build-products
           fi
         done
         if [ -d state ]; then
+          sudo chown -R $(whoami) state
           tar cfJ $out/state.tar.xz state
-          echo "file state $f"  >> $out/nix-support-hydra-build-products
+          echo "file state $out/state.tar.xz"  >> $out/nix-support-hydra-build-products
         fi
       '';
 
