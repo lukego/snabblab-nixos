@@ -98,9 +98,10 @@ rec {
             echo "file log $f"  >> $out/nix-support/hydra-build-products
           fi
         done
-        if [ -d state ]; then
-          sudo chown -R $(whoami) state
-          tar cfJ $out/state.tar.xz state
+        if [ -d $NIX_BUILD_TOP/state ]; then
+          sudo chown -R $(whoami) $NIX_BUILD_TOP/state
+          (cd $NIX_BUILD_TOP;
+           tar cfJ $out/state.tar.xz state)
           echo "file state $out/state.tar.xz"  >> $out/nix-support-hydra-build-products
         fi
       '';
