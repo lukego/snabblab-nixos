@@ -126,7 +126,7 @@ rec {
          patch -p1 < $testEnvPatch || true
        '';
        fixupPhase = ''
-         cp qemu*.log $out/ || true
+         cp qemu*.log $out/ 2>/dev/null || true
        '';
      } // removeAttrs attrs [ "times" ]);
    in buildNTimes snabbTest times;
