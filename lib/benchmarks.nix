@@ -127,7 +127,10 @@ rec {
       hardware = "murren";
       inherit (attrs) snabb;
       checkPhase = ''
-        /var/setuid-wrappers/sudo ${snabb}/bin/snabb snabbmark basic1 100e6 |& tee $out/log.txt
+        export SNABB_SHM_ROOT=state
+        /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb snsh -jdump=+rs,$out/jitdump.txt \
+                                                             -jtprof \
+                                                             -p snabbmark basic1 100e6 |& tee $out/log.txt
       '';
       meta = {
         snabbVersion = snabb.version or "";
@@ -157,6 +160,10 @@ rec {
       checkPhase = ''
         export SNABB_IPERF_BENCH_CONF=${iperfports.${conf} or ""}
         cd src
+        export NFV_DUMP="+rs"
+        export NFV_DUMP_FILE=$out/jitdump.txt
+        export NFV_TRACEPROF=yes
+        export SNABB_SHM_ROOT=state
         /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
       '';
     });
@@ -182,6 +189,10 @@ rec {
       };
       checkPhase = ''
         cd src
+        export NFV_DUMP="+rs"
+        export NFV_DUMP_FILE=$out/jitdump.txt
+        export NFV_TRACEPROF=yes
+        export SNABB_SHM_ROOT=state
         /var/setuid-wrappers/sudo -E timeout 120 program/snabbnfv/packetblaster_bench.sh |& tee $out/log.txt
       '';
     });
@@ -212,6 +223,10 @@ rec {
 
           export SNABB_PACKET_SIZES=${pktsize}
           export SNABB_DPDK_BENCH_CONF=${dpdkports.${conf}}
+          export NFV_DUMP="+rs"
+          export NFV_DUMP_FILE=$out/jitdump.txt
+          export NFV_TRACEPROF=yes
+          export SNABB_SHM_ROOT=state
           /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/dpdk_bench.sh |& tee $out/log.txt
         '';
       });
@@ -230,7 +245,8 @@ rec {
       };
       checkPhase = ''
         cd src
-        /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster replay --duration 1 \
+        export SNABB_SHM_ROOT=state
+        /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb packetblaster replay --duration 1 \
           program/snabbnfv/test_fixtures/pcap/64.pcap "$SNABB_PCI_INTEL0" |& tee $out/log.txt
       '';
     });
@@ -248,7 +264,8 @@ rec {
         '';
       };
       checkPhase = ''
-        /var/setuid-wrappers/sudo ${snabb}/bin/snabb packetblaster synth \
+        export SNABB_SHM_ROOT=state
+        /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb packetblaster synth \
           --src 11:11:11:11:11:11 --dst 22:22:22:22:22:22 --sizes 64 \
           --duration 1 "$SNABB_PCI_INTEL0" |& tee $out/log.txt
       '';
