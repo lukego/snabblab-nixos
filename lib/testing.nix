@@ -95,8 +95,7 @@ rec {
         sudo chown -R $(whoami) $out
         for f in $(ls $out/* | sort); do
           if [ -f $f ]; then
-            gzip $f
-            echo "file log $f.gz"  >> $out/nix-support/hydra-build-products
+            echo "file log $f"  >> $out/nix-support/hydra-build-products
           fi
         done
         if [ -d state ]; then

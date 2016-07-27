@@ -131,6 +131,7 @@ rec {
         /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb snsh -jdump=+rs,$out/jitdump.txt \
                                                              -jtprof \
                                                              -p snabbmark basic1 100e6 |& tee $out/log.txt
+        gzip $out/jitdump.txt || true
       '';
       meta = {
         snabbVersion = snabb.version or "";
@@ -165,6 +166,7 @@ rec {
         export NFV_TRACEPROF=yes
         export SNABB_SHM_ROOT=state
         /var/setuid-wrappers/sudo -E program/snabbnfv/selftest.sh bench |& tee $out/log.txt
+        gzip $out/jitdump.txt || true
       '';
     });
   mkMatrixBenchNFVDPDK = { snabb, qemu, kPackages, dpdk, ... }@attrs:
@@ -194,6 +196,7 @@ rec {
         export NFV_TRACEPROF=yes
         export SNABB_SHM_ROOT=state
         /var/setuid-wrappers/sudo -E timeout 120 program/snabbnfv/packetblaster_bench.sh |& tee $out/log.txt
+        gzip $out/jitdump.txt || true
       '';
     });
   # using Soft NIC
@@ -228,6 +231,7 @@ rec {
           export NFV_TRACEPROF=yes
           export SNABB_SHM_ROOT=state
           /var/setuid-wrappers/sudo -E timeout 160 program/snabbnfv/dpdk_bench.sh |& tee $out/log.txt
+          gzip $out/jitdump.txt || true
         '';
       });
   mkMatrixBenchPacketblaster = { snabb, ... }@attrs:
