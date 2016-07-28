@@ -68,3 +68,15 @@ p <- p + facet_wrap(~ benchmark, ncol=1, scales = "free")
 p + ggtitle("Shape (distribution) of test results")
 ```
 
+## ECDF
+
+[Empirical Cumulative Distribution Function](https://en.wikipedia.org/wiki/Empirical_distribution_function) shows the proportion of values that are above a threshold.
+
+```{r}
+p <- ggplot(sliced, aes(score, color = snabb))
+p <- p + theme(legend.position="top")
+p <- p + stat_ecdf()
+p <- p + facet_wrap(~ benchmark, ncol=1, scales = "free")
+p + ggtitle("Cumulative distribution of results")
+```
+
