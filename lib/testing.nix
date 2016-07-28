@@ -47,7 +47,7 @@ rec {
       src = snabb.src;
       name = name + (lib.optionalString (repeatNum != null) "_num=${toString repeatNum}");
 
-      buildInputs = [ git telnet tmux numactl bc iproute which qemu utillinux ];
+      buildInputs = [ linuxPackages.perf git telnet tmux numactl bc iproute which qemu utillinux ];
 
       SNABB_KERNEL_PARAMS = lib.optionalString needsNixTestEnv
         (if isDPDK
