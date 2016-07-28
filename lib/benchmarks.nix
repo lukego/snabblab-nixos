@@ -130,6 +130,8 @@ rec {
         export PATH=$PATH:/var/setuid-wrappers
         export SNABB_SHM_ROOT=$NIX_BUILD_TOP/state
         sudo -E \
+          nice -20 \
+          taskset -c 1 \
           perf stat -e task-clock,context-switches,cpu-migrations,page-faults,cycles,instructions,LLC-stores,LLC-loads,branch-misses,dTLB-loads,iTLB-loads,L1-icache-misses \
           ${snabb}/bin/snabb \
             snsh -jdump=+rs,$out/jitdump.txt \
