@@ -127,10 +127,14 @@ rec {
       hardware = "murren";
       inherit (attrs) snabb;
       checkPhase = ''
+        export PATH=$PATH:/var/setuid-wrappers
         export SNABB_SHM_ROOT=$NIX_BUILD_TOP/state
-        /var/setuid-wrappers/sudo -E ${snabb}/bin/snabb snsh -jdump=+rs,$out/jitdump.txt \
-                                                             -jtprof \
-                                                             -p snabbmark basic1 100e6 |& tee $out/log.txt
+        sudo -E \
+          perf stat -e task-clock,context-switches,cpu-migrations,page-faults,cycles,instructions,LLC-stores,LLC-loads,branch-misses,dTLB-loads,iTLB-loads,L1-icache-misses \
+          ${snabb}/bin/snabb \
+            snsh -jdump=+rs,$out/jitdump.txt \
+            -jtprof \
+            -p snabbmark basic1 100e6 |& tee $out/log.txt
         gzip $out/jitdump.txt || true
       '';
       meta = {
