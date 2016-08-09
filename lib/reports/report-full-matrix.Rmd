@@ -156,6 +156,12 @@ ggplot_distribution(l2fwd0) + facet_wrap(~qemu, ncol=2, scales = "free_y", shrin
 ggplot_distribution(l2fwd0) + facet_wrap(qemu ~ dpdk, scales = "free_y", shrink = TRUE) + ggtitle("l2fwd by QEMU and DPDK")
 ```
 
+### QEMU + DPDK + Config
+
+```{r}
+ggplot_distribution(l2fwd0) + facet_wrap(qemu ~ dpdk + config, scales = "free_y", shrink = TRUE) + ggtitle("l2fwd by QEMU and DPDK and config")
+```
+
 ### Success and failure
 
 Success rate:
