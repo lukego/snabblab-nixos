@@ -13,9 +13,10 @@ knitr::opts_chunk$set(error = TRUE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 ```
 
-```{r warning=FALSE}
+```{r include=FALSE, warning=FALSE, message=FALSE}
 library(ggplot2)
 library(dplyr)
+library(sfsmisc)
 ```
 ```{r}
 d <- read.csv("bench.csv")
@@ -47,11 +48,53 @@ ggplot_distribution <- function(dataframe) {
 
 ```
 
-Performance comparison between Snabb versions. Compares scores with various benchmarks, workloads, configurations, and software dependency versions. Results are reported as [probability density graphs](https://en.wikipedia.org/wiki/Probability_density_function) showing the distribution of benchmark scores (measured in Gbps for iperf and Mpps for l2fwd).
+Performance comparison between Snabb versions. Compares scores with various benchmarks, workloads, configurations, and software dependency versions. Results are mostly reported as [probability density graphs](https://en.wikipedia.org/wiki/Probability_density_function) to show the distribution of benchmark scores (measured in Gbps for iperf and Mpps for l2fwd).
 
 The overall purpose of this report is to highlight the relative strengths and weaknesses between Snabb software versions. This is particularly intended for evaluating how experimental changes affect performance and reliability.
 
 This report starts with a very broad summary and then drills down on iperf and l2fwd results separately.
+
+## Significance test
+
+This first graph is special: its purpose is to show whether there are "statistically significant" differences between the Snabb versions. It is plotted in an especially suitable way: a CDF (see [Reading CDF Graphs](http://docs.battlemesh.org/v8/ecdf.html)) with a 95% confidence band. (Explanation follows below.)
+
+```{r fig.width=8, fig.height=5}
+f <- function(data) {
+  n <- length(data)
+  D <- KSd(n)
+  ec <- ecdf(data)
+  x <- get("x", envir = environment(ec))
+  y <- get("y", envir = environment(ec))
+  tibble(x = x,
+         ymax = pmin(y+D, 1),
+         ymin = pmax(y-D, 0))
+}
+
+data <- tibble()
+for (branch in levels(as.factor(d$snabb))) {
+  new <- f(filter(d, snabb == branch)$score)
+  new$snabb <- branch
+  data <- rbind(data, new)
+}
+ggplot(data = data) +
+  geom_ribbon(aes(x=x, ymin=1-ymin, ymax=1-ymax, color=snabb, fill=snabb),
+              alpha=0.35) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(y = "% of results above score on X-axis",
+       x = "Benchmark score",
+       title = "Branch-wise Snabb benchmark CDF",
+       subtitle = "95% confidence band for Cumulative Distribution Function (CDF)")
+```
+
+Significant differences appear as gaps (blank space) between confidence bands. For each gap the band above seems to be significantly _faster_ than the band below. If bands criss-cross this suggests that one version is faster on some benchmarks and slower on others.
+
+If two bands have no gaps (i.e. they overlap at every point on the X-axis) then no significant differences between those bands was found. In this case any apparent differences between branches in the other plots below should be taken with a grain of salt.
+
+Notes: 
+
+- Higher is better.
+- The breadth of the confidence bands depends on the number of benchmarks. The more data you have, the narrower your bands, the easier it is to find small gaps. If you think there is a difference but the bands are too broad to be sure then consider re-running the benchmark with more iterations.
+- The confidence bands are calculated using a method based on the [Kolmogorov-Smirnov (KS) test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test).
 
 ## Overall summary
 
