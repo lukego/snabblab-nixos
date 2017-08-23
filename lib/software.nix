@@ -110,10 +110,6 @@ rec {
   ];
 
   kernelPackages = [
-    pkgs.linuxPackages_3_14
-    pkgs.linuxPackages_3_18
-    pkgs.linuxPackages_4_1
-    pkgs.linuxPackages_4_3
-    pkgs.linuxPackages_4_4
+    pkgs.linuxPackages_4_9
   ];
 }
