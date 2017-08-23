@@ -111,5 +111,6 @@ rec {
 
   kernelPackages = [
     pkgs.linuxPackages_4_9
+    pkgs.linuxPackages_4_12
   ];
 }
