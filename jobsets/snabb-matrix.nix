@@ -29,7 +29,7 @@
 # For possible values see lib/reports/, e.g. "basic"
 , reports ? []
 # What kernel versions to benchmark on, for possible values see lib/benchmarks.nix
-, kernelVersions ? ["3.18"]  # fix kernel for now to reduce memory usage
+, kernelVersions ? ["4.9"]  # fix kernel for now to reduce memory usage
 # What dpdk versions to benchmark on, for possible values see lib/benchmarks.nix
 , dpdkVersions ? []
 # Additional qemu version to benchmark on, specified using source and name
@@ -86,7 +86,7 @@ let
 
 in rec {
   # All versions of software used in benchmarks
-  software = listDrvToAttrs (snabbs ++ subQemus ++ (selectDpdks dpdkVersions linuxPackages_3_18));
+  software = listDrvToAttrs (snabbs ++ subQemus ++ (selectDpdks dpdkVersions linuxPackages_4_9));
   benchmarks = benchmarks-list;
   benchmark-csv = mkBenchmarkCSV (builtins.attrValues benchmarks-list);
   benchmark-reports =
