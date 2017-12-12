@@ -49,7 +49,9 @@ in rec {
               sudo chmod a+rX /var/run/snabb
               if [ -n "$keepShm" ]; then
                 cd /var/run/snabb
-                cp ${attrs.snabb}/lib/raptorjit.dwo .
+                if [ -f ${attrs.snabb}/lib.raptorjit.dwo ]; then
+                  cp ${attrs.snabb}/lib/raptorjit.dwo .
+                fi
                 sudo tar cvf $out/snabb.tar [0-9]* raptorjit.dwo
                 sudo chown $(whoami):$(id -g -n) $out/snabb.tar
                 xz -0 -T0 $out/snabb.tar
