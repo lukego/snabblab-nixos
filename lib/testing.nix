@@ -17,24 +17,26 @@ rec {
   # Given a server group name such as "lugano"
   # return attribute set of PCI assignment values
   getPCIVars = hardware:
-    let
-      pcis = PCIAssignments."${hardware}" or (throw "No such PCIAssignments group as ${hardware}");
-    in  pcis  // {
-      requiredSystemFeatures = [ hardware ];
-    };
+    if hardware == null then {} else
+      let
+        pcis = PCIAssignments."${hardware}" or (throw "No such PCIAssignments group as ${hardware}");
+      in  pcis  // {
+        requiredSystemFeatures = [ hardware ];
+      };
 
   # Function for running commands in environment as Snabb expects tests to run
   mkSnabbTest = { name # name of the test executed
                 , snabb # snabb derivation used
                 , qemu ? pkgs.qemu  # qemu package used in tests
                 , checkPhase # bash (string) actually executing the test
-                , hardware # on what server group should we run this?
+                , hardware ? null # on what server group should we run this?
                 , needsNixTestEnv ? false # if true, copies over our test env
                 , testNixEnv ? (mkNixTestEnv {}) # qemu images and kernel
                 , alwaysSucceed ? false # if true, the build will succeed even on failure and provide a log
+                , env ? {}
                 , ...
                 }@attrs:
-    pkgs.stdenv.mkDerivation ((getPCIVars hardware) // {
+    pkgs.stdenv.mkDerivation ((getPCIVars hardware) // env // {
       src = snabb.src;
 
       buildInputs = [ pkgs.git pkgs.telnet pkgs.tmux pkgs.numactl pkgs.bc pkgs.iproute pkgs.which qemu pkgs.utillinux ];

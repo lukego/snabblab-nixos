@@ -92,10 +92,10 @@ in rec {
     `packetblaster` sets "lugano" as default hardware group,
     as the benchmark depends on having a NIC installed.
   */
-  mkMatrixBenchPacketblaster = { snabb, times, hardware ? "lugano", ... }:
+  mkMatrixBenchPacketblaster = { snabb, times, hardware ? "lugano", keepShm, ... }:
     mkSnabbBenchTest {
       name = "${testing.versionToAttribute snabb.version or ""}-packetblaster-64";
-      inherit snabb times hardware;
+      inherit snabb times hardware keepShm;
       toCSV = drv: ''
         pps=$(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g)
         score=$(echo "scale=2; $pps / 1000000" | bc)
@@ -113,10 +113,10 @@ in rec {
     Similar to `packetblaster` benchmark, but use "synth"
     command with size 64.
   */
-  mkMatrixBenchPacketblasterSynth = { snabb, times, ... }:
+  mkMatrixBenchPacketblasterSynth = { snabb, times, keepShm, ... }:
     mkSnabbBenchTest {
       name = "${testing.versionToAttribute snabb.version or ""}-packetblaster-synth-64";
-      inherit snabb times;
+      inherit snabb times keepShm;
       hardware = "lugano";
       toCSV = drv: ''
         pps=$(cat ${drv}/log.txt | grep TXDGPC | cut -f 3 | sed s/,//g)
@@ -137,7 +137,7 @@ in rec {
 
      If hardware group doesn't use have a NIC, ports can be specified.
   */
-  mkMatrixBenchNFVIperf = { snabb, times, qemu, kPackages, conf ? "NA", hardware ? "lugano", testNixEnv, ... }:
+  mkMatrixBenchNFVIperf = { snabb, times, qemu, kPackages, conf ? "NA", hardware ? "lugano", testNixEnv, keepShm, ... }:
     let
       iperfports = {
         base         = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/same_vlan.ports";
@@ -148,7 +148,7 @@ in rec {
       };
     in mkSnabbBenchTest {
       name = "iperf_conf=${conf}_snabb=${testing.versionToAttribute snabb.version or ""}_kernel=${testing.versionToAttribute kPackages.kernel.version}_qemu=${testing.versionToAttribute qemu.version}";
-      inherit hardware kPackages snabb times qemu testNixEnv;
+      inherit hardware kPackages snabb times qemu testNixEnv keepShm;
       toCSV = drv: ''
         score=$(awk '/^IPERF-/ { print $2 }' < ${drv}/log.txt)
         ${writeCSV drv "iperf" "Gbps"}
@@ -168,7 +168,7 @@ in rec {
 
      If hardware group doesn't use have a NIC then conf and pktsize are required
   */
-  mkMatrixBenchNFVDPDK = { snabb, qemu, kPackages, dpdk, hardware ? "lugano", times, pktsize ? "", conf ? "", testNixEnv, ... }:
+  mkMatrixBenchNFVDPDK = { snabb, qemu, kPackages, dpdk, hardware ? "lugano", times, pktsize ? "", conf ? "", testNixEnv, keepShm, ... }:
     let
       dpdkports = {
         base  = "program/snabbnfv/test_fixtures/nfvconfig/test_functions/snabbnfv-bench.port";
@@ -182,7 +182,7 @@ in rec {
     then []
     else mkSnabbBenchTest rec {
       name = "l2fwd_pktsize=${pktsize}_conf=${conf}_snabb=${testing.versionToAttribute snabb.version or ""}_dpdk=${testing.versionToAttribute dpdk.version}_qemu=${testing.versionToAttribute qemu.version}";
-      inherit snabb qemu times hardware dpdk kPackages testNixEnv;
+      inherit snabb qemu times hardware dpdk kPackages testNixEnv keepShm;
       needsNixTestEnv = true;
       toCSV = drv: ''
         score=$(awk '/^Rate\(Mpps\):/ { print $2 }' < ${drv}/log.txt)
