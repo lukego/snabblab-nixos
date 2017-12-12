@@ -25,6 +25,9 @@ rec {
         {
           name = super.name + version;
           inherit version;
+          postInstall = ''
+            install -D src/lj_dwarf.dwo $out/lib/raptorjit.dwo
+          '';
         }
       );
 
