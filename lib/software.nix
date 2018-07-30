@@ -107,6 +107,11 @@ rec {
     (buildQemu "2.6.2" "18zsjz11fxnv8yh2nfc59ifrp1kiwbmh03j11ibix7kv2i7wczls" false)
     (buildQemu "2.7.1" "13wm4941r0qp48l4r4raf7annpa9a0mv68529fsb1g39xf46fqv8" false)
     (buildQemu "2.8.0" "0qjy3rcrn89n42y5iz60kgr0rrl29hpnj8mq2yvbc1wrcizmvzfs" false)
+    (buildQemu "2.9.1" "1340hh4jvhvi97yqck408wi8aagnhzq1311ih0fq9bp4ddlk03sd" false)
+    (buildQemu "2.10.2" "0921z72b1cfy7h4916myypl2j6dshv033rvifn31f7x3znxx2a3f" false)
+    (buildQemu "2.11.2" "17xz3j17sndz1z8hl3qcci50bz4qk6xb60hy1f61486jhx2vhbyw" false)
+    (buildQemu "2.12.0" "17377xxbmwbrnh895a108z944pqi39hzrbw4jzgj8pcipi3s3x69" false)
+    (buildQemu "3.0.0-rc2" "00crkds5dm3qq4hbbd8dfgi8dbk53lbb70wsyl2g4azgkqgpaw81" false)
   ];
 
   kernelPackages = [
