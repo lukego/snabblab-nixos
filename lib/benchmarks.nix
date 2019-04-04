@@ -175,7 +175,7 @@ in rec {
       '';
       meta = { inherit pktsize conf; };
       checkPhase = 
-        if hardware == "soft"
+        if hardware == "lugano"
         then ''
           cd src
 
@@ -283,18 +283,18 @@ in rec {
       packetblaster-synth = mkMatrixBenchPacketblasterSynth;
 
       iperf = mkMatrixBenchNFVIperf;
-      iperf-base = params: mkMatrixBenchNFVIperf (params // {conf = "base"; hardware = "soft";});
-      iperf-filter = params: mkMatrixBenchNFVIperf (params // {conf = "filter"; hardware = "soft";});
-      iperf-ipsec = params: mkMatrixBenchNFVIperf (params // {conf = "ipsec"; hardware = "soft";});
-      iperf-l2tpv3 = params: mkMatrixBenchNFVIperf (params // {conf = "l2tpv3"; hardware = "soft";});
-      iperf-l2tpv3-ipsec = params: mkMatrixBenchNFVIperf (params // {conf = "l2tpv3_ipsec"; hardware = "soft";});
+      iperf-base = params: mkMatrixBenchNFVIperf (params // {conf = "base"; hardware = "lugano";});
+      iperf-filter = params: mkMatrixBenchNFVIperf (params // {conf = "filter"; hardware = "lugano";});
+      iperf-ipsec = params: mkMatrixBenchNFVIperf (params // {conf = "ipsec"; hardware = "lugano";});
+      iperf-l2tpv3 = params: mkMatrixBenchNFVIperf (params // {conf = "l2tpv3"; hardware = "lugano";});
+      iperf-l2tpv3-ipsec = params: mkMatrixBenchNFVIperf (params // {conf = "l2tpv3_ipsec"; hardware = "lugano";});
 
       dpdk = mkMatrixBenchNFVDPDK;
-      dpdk-soft-base-256 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "base"; hardware = "soft";});
-      dpdk-soft-nomrg-256 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "nomrg"; hardware = "soft";});
-      dpdk-soft-noind-256 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "noind"; hardware = "soft";});
-      dpdk-soft-base-64 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "base"; hardware = "soft";});
-      dpdk-soft-nomrg-64 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "nomrg"; hardware = "soft";});
-      dpdk-soft-noind-64 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "noind"; hardware = "soft";});
+      dpdk-soft-base-256 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "base"; hardware = "lugano";});
+      dpdk-soft-nomrg-256 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "nomrg"; hardware = "lugano";});
+      dpdk-soft-noind-256 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "256"; conf = "noind"; hardware = "lugano";});
+      dpdk-soft-base-64 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "base"; hardware = "lugano";});
+      dpdk-soft-nomrg-64 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "nomrg"; hardware = "lugano";});
+      dpdk-soft-noind-64 = params: mkMatrixBenchNFVDPDK (params // {pktsize = "64"; conf = "noind"; hardware = "lugano";});
     };
 }

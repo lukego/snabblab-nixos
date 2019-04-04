@@ -7,9 +7,9 @@ rec {
   # Default PCCI assignment values for server groups
   PCIAssignments = {
     lugano = {
-      SNABB_PCI0 = "0000:01:00.0";
-      SNABB_PCI_INTEL0 = "0000:01:00.0";
-      SNABB_PCI_INTEL1 = "0000:01:00.1";
+#      SNABB_PCI0 = "0000:01:00.0";
+#      SNABB_PCI_INTEL0 = "0000:01:00.0";
+#      SNABB_PCI_INTEL1 = "0000:01:00.1";
     };
     murren = {};
   };
